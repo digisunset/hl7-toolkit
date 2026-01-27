@@ -1,0 +1,17 @@
+severity	error_pattern	summary	recommended_action	ccl_tags
+FAILURE	Unable to find order and container	The assay alias is not associated to the order or routing	Check assay_processing_r and routing ellipsis	order,obx,container
+WARNING	No Order Match	Inbound order could not be matched in Cerner	Check order alias formatting and accession	order,accession
+FAILURE	Missing orderable procedure alias	Orderable alias not built in Code Set 200	Add alias in Code Set 200 for contributor system	alias,orders
+FAILURE	ESI_RLI_RESULT::getObrOrderInfo: Missing orderable procedure alias	Orderable alias missing for inbound OBR	Add alias in Code Set 200 for contributor system	alias,orders
+FAILURE	Failed to commit the event ensure	Result missing required OBX segments	Ensure each OBR contains at least one OBX	obx,clinical_event
+FAILURE	Invalid Event Code	Event code not aliased inbound	Add alias in Code Set 72 or 14003	event_cd,alias
+FAILURE	Add Addendum.*Cannot send an addendum	Addendum sent before original report finalized	Check original report status before resending	addendum,report
+FAILURE	Unable to retrieve order_id	Order alias not found in order_alias table	Check leading zeros and alias type/order id	order,alias
+FAILURE	Unable to extract internal order_id	Inbound order identifier not resolved	Check OBR-2 / OBR-3 values and aliasing	order,alias
+FAILURE	Invalid contributor codes	Contributor system not built or aliased	Check contributor system configuration	contributor,alias
+FAILURE	Null encntr_id	Encounter could not be resolved	Check FIN / encounter alias	encounter
+FAILURE	Null person_id	Person could not be resolved	Check MRN alias and person build	person
+FAILURE	Invalid Code Value Alias	Code value alias missing or invalid	Add alias to correct code set	alias
+FAILURE	Failed to construct Child Clinical Event	OBX 3.1 not aliased for assay processing	Check code set 72 / 14003 aliasing	obx,alias
+FAILURE	Unable to create base ClinicalEvent	OBR or OBX data invalid	Check OBR-4 and OBX-3 aliasing	clinical_event
+WARNING	Unable to complete order for result message	Order result skipped due to status or timing	Check result status and verified date	time,status
