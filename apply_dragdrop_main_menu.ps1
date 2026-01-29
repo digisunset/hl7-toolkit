@@ -1,0 +1,230 @@
+Write-Host "Applying drag & drop Error Log upload changes..."
+
+# -----------------------------
+# Update templates/menu.html
+# -----------------------------
+@'
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HL7 Tools</title>
+  <link rel="icon" href="/static/favicon.ico">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 0;
+    }
+
+    .menu-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .menu-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      width: 80px;
+      margin-bottom: 10px;
+    }
+
+    .menu-header h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      box-sizing: border-box;
+      transition: background 0.2s, border 0.2s;
+    }
+
+    .card.dragover {
+      border: 2px dashed #b71c1c;
+      background: #fff5f5;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 14px;
+      color: #555;
+    }
+
+    a.button {
+      display: block;
+      margin-top: 14px;
+      padding: 10px;
+      background: #b71c1c;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    a.button:hover {
+      background: #8e0000;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 20px;
+      font-size: 12px;
+      color: #777;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="menu-container">
+
+    <div class="menu-header">
+      <img src="/static/android-chrome-192x192.png" class="logo">
+      <h1>HL7 Tools</h1>
+    </div>
+
+    <div class="tool-grid">
+
+      <!-- Error Log Parser with Drag & Drop -->
+      <div class="card" id="errorLogDrop">
+        <h3>Error Log HL7 Parser</h3>
+        <p>
+          Drag & drop an ESI error log PDF here<br>
+          or browse to upload.
+        </p>
+
+        <input type="file" id="errorLogFile" accept=".pdf" hidden>
+
+        <a class="button" href="#" onclick="browseErrorLog()">Browse</a>
+      </div>
+
+      <!-- Single Message Parser -->
+      <div class="card">
+        <h3>Single HL7 Message Parser</h3>
+        <p>Paste a raw HL7 message and view structured output.</p>
+        <a class="button" href="/single-message">Open</a>
+      </div>
+
+    </div>
+
+    <footer>
+      HL7 Tools v1.2 • Authored by HUBERMAR "THING2" • marc.huber@med.usc.edu • MIT License
+    </footer>
+
+  </div>
+
+<script>
+  const dropZone = document.getElementById("errorLogDrop");
+  const fileInput = document.getElementById("errorLogFile");
+
+  function browseErrorLog() {
+    fileInput.click();
+  }
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) {
+      uploadErrorLog(fileInput.files[0]);
+    }
+  });
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+
+    if (e.dataTransfer.files.length > 0) {
+      uploadErrorLog(e.dataTransfer.files[0]);
+    }
+  });
+
+  function uploadErrorLog(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/error-log-upload", {
+      method: "POST",
+      body: formData
+    })
+    .then(() => {
+      window.location.href = "/error-log";
+    })
+    .catch(() => {
+      alert("Failed to upload file.");
+    });
+  }
+</script>
+
+</body>
+</html>
+'@ | Set-Content templates/menu.html -Encoding UTF8
+
+
+# -----------------------------
+# Append upload route to app.py
+# -----------------------------
+$appPy = Get-Content app.py -Raw
+
+if ($appPy -notmatch "error-log-upload") {
+  Add-Content app.py @'
+
+# -----------------------------
+# Error Log Upload (Main Menu)
+# -----------------------------
+import tempfile
+from flask import redirect
+
+uploaded_pdf_path = None
+uploaded_pdf_text = None
+
+@app.route("/error-log-upload", methods=["POST"])
+def error_log_upload():
+    global uploaded_pdf_path
+
+    file = request.files.get("file")
+    if not file:
+        return "No file uploaded", 400
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    file.save(tmp.name)
+
+    uploaded_pdf_path = tmp.name
+    return redirect("/error-log")
+
+'@
+}
+
+Write-Host "Drag and drop main menu support applied."

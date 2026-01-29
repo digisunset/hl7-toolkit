@@ -1,67 +1,186 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
   <title>HL7 Tools</title>
-
   <link rel="icon" href="/static/favicon.ico">
+
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #fafafa;
-      padding: 40px;
-      text-align: center;
+      margin: 0;
+      padding: 0;
     }
 
-    .logo {
-      width: 96px;
+    .menu-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .menu-header {
+      text-align: center;
       margin-bottom: 20px;
     }
 
+    .logo {
+      width: 80px;
+      margin-bottom: 10px;
+    }
+
+    .menu-header h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+    }
+
     .card {
-      display: inline-block;
-      width: 320px;
-      margin: 20px;
-      padding: 20px;
+      padding: 18px;
       border: 1px solid #ccc;
       border-radius: 6px;
       background: #fff;
+      box-sizing: border-box;
+      transition: background 0.2s, border 0.2s;
+    }
+
+    .card.dragover {
+      border: 2px dashed #b71c1c;
+      background: #fff5f5;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 14px;
+      color: #555;
     }
 
     a.button {
       display: block;
-      margin-top: 15px;
+      margin-top: 14px;
       padding: 10px;
       background: #b71c1c;
       color: #fff;
       text-decoration: none;
       border-radius: 4px;
+      text-align: center;
     }
 
     a.button:hover {
       background: #8e0000;
     }
+
+    footer {
+      margin-top: auto;
+      padding-top: 20px;
+      font-size: 12px;
+      color: #777;
+      text-align: center;
+    }
   </style>
 </head>
 
 <body>
-  <img src="/static/android-chrome-192x192.png" class="logo">
+  <div class="menu-container">
 
-  <h1>HL7 Tools</h1>
+    <div class="menu-header">
+      <img src="/static/android-chrome-192x192.png" class="logo">
+      <h1>HL7 Tools</h1>
+    </div>
 
-  <div class="card">
-    <h3>Error Log HL7 Parser</h3>
-    <p>Upload ESI error log PDFs and investigate failures.</p>
-    <a class="button" href="/error-log">Open</a>
+    <div class="tool-grid">
+
+      <!-- Error Log Parser with Drag & Drop -->
+      <div class="card" id="errorLogDrop">
+        <h3>Error Log HL7 Parser</h3>
+        <p>
+          Drag & drop an ESI error log PDF here<br>
+          or browse to upload.
+        </p>
+
+        <input type="file" id="errorLogFile" accept=".pdf" hidden>
+
+        <a class="button" href="#" onclick="browseErrorLog()">Browse</a>
+      </div>
+
+      <!-- Single Message Parser -->
+      <div class="card">
+        <h3>Single HL7 Message Parser</h3>
+        <p>Paste a raw HL7 message and view structured output.</p>
+        <a class="button" href="/single-message">Open</a>
+      </div>
+
+    </div>
+
+    <footer>
+      HL7 Tools v1.2 â€¢ Authored by HUBERMAR "THING2" â€¢ marc.huber@med.usc.edu â€¢ MIT License
+    </footer>
+
   </div>
 
-  <div class="card">
-    <h3>Single HL7 Message Parser</h3>
-    <p>Paste a raw HL7 message and view structured output.</p>
-    <a class="button" href="/single-message">Open</a>
-  </div>
-  <footer style="margin-top:40px; font-size:12px; color:#777; text-align:center;">
-  HL7 Tools v1.1 • Authored by HUBERMAR "THING2" • marc.huber@med.usc.edu • MIT License
-</footer>
+<script>
+  const dropZone = document.getElementById("errorLogDrop");
+  const fileInput = document.getElementById("errorLogFile");
+
+  function browseErrorLog() {
+    fileInput.click();
+  }
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) {
+      uploadErrorLog(fileInput.files[0]);
+    }
+  });
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+
+    if (e.dataTransfer.files.length > 0) {
+      uploadErrorLog(e.dataTransfer.files[0]);
+    }
+  });
+
+  function uploadErrorLog(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/error-log-upload", {
+      method: "POST",
+      body: formData
+    })
+    .then(() => {
+      window.location.href = "/error-log";
+    })
+    .catch(() => {
+      alert("Failed to upload file.");
+    });
+  }
+</script>
 
 </body>
 </html>

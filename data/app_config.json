@@ -1,0 +1,6 @@
+﻿{
+  "send_to_snow_email": "ServiceDesk@med.usc.edu",
+  "email_subject_prefix": "[HL7 ERROR]",
+  "default_parser_tab": "errors",
+  "collapse_warnings_by_default": true
+}

@@ -147,5 +147,112 @@ def single_message():
 
 
 
+import threading
+import webview
+
+def start_flask():
+    app.run(host="127.0.0.1", port=5000, debug=False)
+
+import threading
+import webview
+import ctypes
+import json
+import os
+
+
+# -----------------------------
+# Window state persistence
+# -----------------------------
+STATE_FILE = "window_state.json"
+
+def load_window_state():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return None
+
+
+def save_window_state(window):
+    try:
+        state = {
+            "width": window.width,
+            "height": window.height,
+            "x": window.x,
+            "y": window.y,
+            "maximized": window.maximized
+        }
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f)
+    except Exception:
+        pass
+
+
+# -----------------------------
+# Flask runner
+# -----------------------------
+def start_flask():
+    app.run(host="127.0.0.1", port=5000, debug=False)
+
+
 if __name__ == "__main__":
-    app.run(debug=False)
+
+    # Start Flask in background
+    threading.Thread(target=start_flask, daemon=True).start()
+
+    # Get screen resolution (Windows)
+    user32 = ctypes.windll.user32
+    screen_width = user32.GetSystemMetrics(0)
+    screen_height = user32.GetSystemMetrics(1)
+
+    # Default window size (~¼ screen area)
+    default_width = int(screen_width * 0.5)
+    default_height = int(screen_height * 0.5)
+
+    # Load last window state if present
+    state = load_window_state()
+
+    window = webview.create_window(
+        title="HL7 Tools",
+        url="http://127.0.0.1:5000",
+        width=state["width"] if state else default_width,
+        height=state["height"] if state else default_height,
+        x=state["x"] if state else (screen_width - default_width) // 2,
+        y=state["y"] if state else (screen_height - default_height) // 2,
+        resizable=True,
+        maximized=state["maximized"] if state else False
+    )
+
+    # Save window state on close
+    def on_closed():
+        save_window_state(window)
+
+    window.events.closed += on_closed
+
+    webview.start(gui="edgechromium", debug=False)
+
+# -----------------------------
+# Error Log Upload (Main Menu)
+# -----------------------------
+import tempfile
+from flask import redirect
+
+uploaded_pdf_path = None
+uploaded_pdf_text = None
+
+@app.route("/error-log-upload", methods=["POST"])
+def error_log_upload():
+    global uploaded_pdf_path
+
+    file = request.files.get("file")
+    if not file:
+        return "No file uploaded", 400
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    file.save(tmp.name)
+
+    uploaded_pdf_path = tmp.name
+    return redirect("/error-log")
+
